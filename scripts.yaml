@@ -1,0 +1,209 @@
+primary_script: |
+  () => {
+    'use strict';
+    
+    // Function to extract all available information from card elements
+    function extractCardData() {
+        // Use CardComponent inside Offers container to find all cards
+        const cards = document.querySelectorAll('[data-name="Offers"] [data-name="CardComponent"]');
+        const results = [];
+        
+        cards.forEach((card, index) => {
+            // Look for the link within each card
+            const link = card.querySelector('a[href*="/rent/flat/"]');
+            
+            if (link) {
+                const url = link.href;
+                
+                // Extract offer_id from URL
+                const match = url.match(/\/rent\/flat\/(\d+)\//);
+                const offerId = match ? match[1] : null;
+                
+                // Extract main price
+                let price = null;
+                const priceElement = card.querySelector('[data-mark="MainPrice"]');
+                if (priceElement) {
+                    const priceText = priceElement.textContent.trim();
+                    // Extract numeric price
+                    const priceMatch = priceText.match(/[\d\s]+/);
+                    if (priceMatch) {
+                        price = parseInt(priceMatch[0].replace(/\s/g, ''));
+                    }
+                }
+                
+                // Extract additional price info
+                let priceInfo = null;
+                const priceInfoElement = card.querySelector('[data-mark="PriceInfo"]');
+                if (priceInfoElement) {
+                    priceInfo = priceInfoElement.textContent.trim();
+                }
+                
+                // Extract time label - only absolute time
+                let timeLabel = null;
+                const timeLabelElement = card.querySelector('[data-name="TimeLabel"]');
+                if (timeLabelElement) {
+                    // Look for the absolute time in the specific div
+                    const absoluteTimeDiv = timeLabelElement.querySelector('._93444fe79c--absolute--yut0v');
+                    if (absoluteTimeDiv) {
+                        const timeSpan = absoluteTimeDiv.querySelector('span');
+                        if (timeSpan) {
+                            timeLabel = timeSpan.textContent.trim();
+                        }
+                    }
+                }
+                
+                // Extract title
+                let title = null;
+                const titleElement = card.querySelector('[data-mark="OfferTitle"]');
+                if (titleElement) {
+                    const titleSpan = titleElement.querySelector('span');
+                    if (titleSpan) {
+                        title = titleSpan.textContent.trim();
+                    }
+                }
+                
+                // Extract metro station and walking time
+                let metroStation = null;
+                let walkingTime = null;
+                const specialGeoElement = card.querySelector('[data-name="SpecialGeo"]');
+                if (specialGeoElement) {
+                    // Extract metro station name - it's in the div that's a sibling to the icon div
+                    const metroLinkElement = specialGeoElement.querySelector('a');
+                    if (metroLinkElement) {
+                        // Get all direct child divs of the link
+                        const divs = metroLinkElement.querySelectorAll('div');
+                        // The metro name is in the last div (after the icon div)
+                        if (divs.length >= 2) {
+                            metroStation = divs[divs.length - 1].textContent.trim();
+                        }
+                    }
+                    
+                    // Extract walking time
+                    const remotenessElement = specialGeoElement.querySelector('._93444fe79c--remoteness--q8IXp');
+                    if (remotenessElement) {
+                        walkingTime = remotenessElement.textContent.trim();
+                    }
+                }
+                
+                // Extract separate geo label fields
+                let city = null;
+                let district = null;
+                let subDistrict = null;
+                let street = null;
+                let buildingNumber = null;
+                
+                const geoLabels = card.querySelectorAll('[data-name="GeneralInfoSectionRowComponent"] [data-name="GeoLabel"]');
+                geoLabels.forEach((label, index) => {
+                    const text = label.textContent.trim();
+                    const href = label.getAttribute('href');
+                    if (text) {
+                        // Classify based on content patterns and link types
+                        if (text === 'Москва' || text === 'СПб') {
+                            city = text;
+                        } else if (text.includes('АО')) {
+                            district = text;
+                        } else if (text.startsWith('р-н ')) {
+                            subDistrict = text;
+                        } else if (text.startsWith('м. ')) {
+                            // Skip metro labels as we already have metro_station
+                        } else if (href && href.includes('/dom/')) {
+                            // Building number - links to building page
+                            buildingNumber = text;
+                        } else {
+                            // Likely a street name
+                            street = text;
+                        }
+                    }
+                });
+                
+                // Parse price info into separate fields
+                let rentalPeriod = null;
+                let utilitiesIncluded = null;
+                let commission = null;
+                let deposit = null;
+                
+                if (priceInfo) {
+                    // Extract rental period
+                    if (priceInfo.includes('От года')) {
+                        rentalPeriod = 'От года';
+                    } else if (priceInfo.includes('На несколько месяцев')) {
+                        rentalPeriod = 'На несколько месяцев';
+                    }
+                    
+                    // Extract utilities info
+                    if (priceInfo.includes('комм. платежи включены')) {
+                        if (priceInfo.includes('без счётчиков')) {
+                            utilitiesIncluded = 'включены (без счётчиков)';
+                        } else if (priceInfo.includes('счётчики включены')) {
+                            utilitiesIncluded = 'включены (счётчики включены)';
+                        } else {
+                            utilitiesIncluded = 'включены';
+                        }
+                    } else if (priceInfo.includes('комм. платежи не включены')) {
+                        utilitiesIncluded = 'не включены';
+                    }
+                    
+                    // Extract commission info
+                    if (priceInfo.includes('без комиссии')) {
+                        commission = 'без комиссии';
+                    } else {
+                        const commissionMatch = priceInfo.match(/комиссия (\d+%)/);
+                        if (commissionMatch) {
+                            commission = commissionMatch[1];
+                        }
+                    }
+                    
+                    // Extract deposit info
+                    if (priceInfo.includes('без залога')) {
+                        deposit = 'без залога';
+                    } else {
+                        const depositMatch = priceInfo.match(/залог ([\d\s]+)/);
+                        if (depositMatch) {
+                            deposit = depositMatch[1].replace(/\s/g, '');
+                        }
+                    }
+                }
+                
+                // Extract description
+                let description = null;
+                const descElement = card.querySelector('[data-name="Description"]');
+                if (descElement) {
+                    description = descElement.textContent.trim();
+                }
+                
+                if (offerId) {
+                    results.push({
+                        offer_id: offerId,
+                        offer_url: url,
+                        price: price,
+                        time_label: timeLabel,
+                        title: title,
+                        metro_station: metroStation,
+                        walking_time: walkingTime,
+                        city: city,
+                        district: district,
+                        sub_district: subDistrict,
+                        street: street,
+                        building_number: buildingNumber,
+                        rental_period: rentalPeriod,
+                        utilities_included: utilitiesIncluded,
+                        commission: commission,
+                        deposit: deposit,
+                        description: description
+                    });
+                }
+            }
+        });
+        
+        return results;
+    }
+    
+    // Return array of objects with comprehensive offer information
+    return extractCardData();
+  }
+wait_for_function: |
+  () => {
+      // Wait for CardComponent elements inside Offers container to load
+      const cardsLoaded = document.querySelectorAll('[data-name="Offers"] [data-name="CardComponent"]').length > 0;
+      return cardsLoaded;
+  }

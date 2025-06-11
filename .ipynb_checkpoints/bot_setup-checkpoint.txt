@@ -1,0 +1,35 @@
+# TELEGRAM BOT SETUP INSTRUCTIONS
+
+## 1. Create Bot
+1. Open Telegram and message @BotFather
+2. Send: /newbot
+3. Choose bot name (e.g., "CIAN Tracker")
+4. Choose username (e.g., "cian_tracker_bot")
+5. Copy the bot token (looks like: 123456789:ABCDEF...)
+
+## 2. Get Chat ID
+1. Start chat with your new bot
+2. Send any message to the bot
+3. Visit: https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
+4. Find your chat ID in the response (usually negative number for groups)
+
+## 3. Set Environment Variables
+Add to your ~/.bashrc or ~/.zshrc:
+
+export TELEGRAM_BOT_TOKEN="123456789:ABCDEF..."
+export TELEGRAM_CHAT_ID="123456789"
+
+Then reload: source ~/.bashrc
+
+## 4. Alternative: Create .env file
+Create file '.env' in this directory:
+
+TELEGRAM_BOT_TOKEN=123456789:ABCDEF...
+TELEGRAM_CHAT_ID=123456789
+
+## 5. Test Bot
+python -c "
+from telegram_bot import TelegramBot
+bot = TelegramBot()
+bot.send_message('🤖 CIAN Tracker bot is working!')
+"
