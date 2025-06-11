@@ -36,11 +36,8 @@ jobs:
     - name: Run bot
       run: python parse_cian.py
       
-    - name: Commit and push changes
+    - name: Show results
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/klimmm/cian-telegram-bot.git
-        git add parsed_data.json
-        git diff --staged --quiet || git commit -m "Auto-update data on $(date)"
-        git push
+        echo "Bot execution completed successfully"
+        ls -la parsed_data.json
+        echo "Data file updated with latest offers"
