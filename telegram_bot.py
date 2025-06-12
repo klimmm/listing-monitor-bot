@@ -1,5 +1,6 @@
 import requests
 import os
+import yaml
 from datetime import datetime
 
 
@@ -9,21 +10,22 @@ class TelegramBot:
         self.base_url = f"https://api.telegram.org/bot{self.bot_token}"
 
     def _load_config(self):
-        """Load bot configuration from file"""
+        """Load bot configuration from YAML file"""
         try:
-            with open('bot_config.txt', 'r') as f:
-                for line in f:
-                    if line.startswith('BOT_TOKEN='):
-                        self.bot_token = line.split('=', 1)[1].strip()
-                    elif line.startswith('CHAT_ID='):
-                        chat_ids = line.split('=', 1)[1].strip()
-                        # Support multiple chat IDs separated by comma
-                        self.chat_ids = [id.strip() for id in chat_ids.split(',')]
+            with open('config.yaml', 'r') as f:
+                config = yaml.safe_load(f)
             
-            if not hasattr(self, 'bot_token') or not hasattr(self, 'chat_ids'):
-                raise Exception("Missing BOT_TOKEN or CHAT_ID in bot_config.txt")
+            self.bot_token = config['bot']['token']
+            self.chat_ids = [str(id) for id in config['bot']['chat_ids']]
+            
+            if not self.bot_token or not self.chat_ids:
+                raise Exception("Missing token or chat_ids in config.yaml")
         except FileNotFoundError:
-            raise Exception("Configuration file not found. Please create bot_config.txt with BOT_TOKEN and CHAT_ID.")
+            raise Exception("Configuration file not found. Please create config.yaml with bot token and chat IDs.")
+        except KeyError as e:
+            raise Exception(f"Invalid config.yaml structure: missing {e}")
+        except Exception as e:
+            raise Exception(f"Error reading config.yaml: {e}")
 
     def _send_message(self, text, parse_mode='HTML'):
         """Send a message to all Telegram chat IDs"""

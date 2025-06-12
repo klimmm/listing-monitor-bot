@@ -1,7 +1,8 @@
+config.yaml
+.env
+bot_config.txt
 bot_token.txt
 chat_id.txt
-bot_config.txt
 __pycache__/
 *.pyc
-.env
 .DS_Store

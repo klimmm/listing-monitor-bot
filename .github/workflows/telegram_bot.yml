@@ -32,8 +32,12 @@ jobs:
         
     - name: Create bot configuration
       run: |
-        echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" > bot_config.txt
-        echo "CHAT_ID=${{ secrets.CHAT_ID }}" >> bot_config.txt
+        cat > config.yaml << EOF
+        bot:
+          token: ${{ secrets.BOT_TOKEN }}
+          chat_ids:
+            - ${{ secrets.CHAT_ID }}
+        EOF
         
     - name: Run bot
       run: python parse_cian.py
