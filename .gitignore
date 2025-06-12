@@ -9,3 +9,5 @@ __pycache__/
 fetch_latest_data.py
 auto_pull.sh
 .ipynb_checkpoints/
+helpers_old.py
+github_token.txt.backup
