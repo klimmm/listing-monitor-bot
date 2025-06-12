@@ -16,30 +16,37 @@ class TelegramBot:
                     if line.startswith('BOT_TOKEN='):
                         self.bot_token = line.split('=', 1)[1].strip()
                     elif line.startswith('CHAT_ID='):
-                        self.chat_id = line.split('=', 1)[1].strip()
+                        chat_ids = line.split('=', 1)[1].strip()
+                        # Support multiple chat IDs separated by comma
+                        self.chat_ids = [id.strip() for id in chat_ids.split(',')]
             
-            if not hasattr(self, 'bot_token') or not hasattr(self, 'chat_id'):
+            if not hasattr(self, 'bot_token') or not hasattr(self, 'chat_ids'):
                 raise Exception("Missing BOT_TOKEN or CHAT_ID in bot_config.txt")
         except FileNotFoundError:
             raise Exception("Configuration file not found. Please create bot_config.txt with BOT_TOKEN and CHAT_ID.")
 
     def _send_message(self, text, parse_mode='HTML'):
-        """Send a message to Telegram"""
+        """Send a message to all Telegram chat IDs"""
         url = f"{self.base_url}/sendMessage"
-        data = {
-            'chat_id': self.chat_id,
-            'text': text,
-            'parse_mode': parse_mode,
-            'disable_web_page_preview': True
-        }
+        success = True
         
-        try:
-            response = requests.post(url, data=data, timeout=10)
-            response.raise_for_status()
-            return True
-        except requests.exceptions.RequestException as e:
-            print(f"Error sending Telegram message: {e}")
-            return False
+        for chat_id in self.chat_ids:
+            data = {
+                'chat_id': chat_id,
+                'text': text,
+                'parse_mode': parse_mode,
+                'disable_web_page_preview': True
+            }
+            
+            try:
+                response = requests.post(url, data=data, timeout=10)
+                response.raise_for_status()
+                print(f"✅ Message sent to chat {chat_id}")
+            except requests.exceptions.RequestException as e:
+                print(f"❌ Error sending to chat {chat_id}: {e}")
+                success = False
+        
+        return success
 
     def _format_offer(self, offer):
         """Format offer data for Telegram message"""
@@ -174,6 +181,7 @@ class TelegramBot:
             bot_info = response.json()
             if bot_info['ok']:
                 print(f"✅ Bot connected successfully: @{bot_info['result']['username']}")
+                print(f"   Will send to {len(self.chat_ids)} chat(s): {', '.join(self.chat_ids)}")
                 return True
             else:
                 print("❌ Bot connection failed")

@@ -36,8 +36,9 @@ The bot runs automatically every 5 minutes. You can also trigger it manually fro
 1. Create `bot_config.txt` with:
    ```
    BOT_TOKEN=your_bot_token_here
-   CHAT_ID=your_chat_id_here
+   CHAT_ID=chat_id_1,chat_id_2,chat_id_3
    ```
+   Note: You can use a single chat ID or multiple IDs separated by commas
 2. Run: `python parse_cian.py`
 
 ## Files
