@@ -205,10 +205,3 @@ wait_for_function: |
       const cardsLoaded = document.querySelectorAll('[data-name="Offers"] [data-name="CardComponent"]').length > 0;
       return cardsLoaded;
   }
-  
-wait_for_function: |
-  () => {
-      // Wait for CardComponent elements inside Offers container to load
-      const cardsLoaded = document.querySelectorAll('[data-name="Offers"] [data-name="CardComponent"]').length > 0;
-      return cardsLoaded;
-  }
