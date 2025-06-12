@@ -76,16 +76,16 @@ Contains JavaScript code for web scraping (automatically configured).
 
 ### Local Development
 1. Configure all YAML files with your settings
-2. Run: `python parse_cian.py`
+2. Run: `python parser.py`
 
 ### Automated Execution
 Use `trigger_workflow.sh` for scheduled runs or integrate with GitHub Actions.
 
 ## Files
 
-- `parse_cian.py` - Main scraper with automatic pagination and change detection
+- `parser.py` - Main scraper with automatic pagination and change detection
 - `telegram_bot.py` - Telegram notification handler with retry logic
 - `helpers.py` - Utility functions for URL construction, change tracking, and message formatting
 - `config_*.yaml` - Configuration files for different components
-- `parsed_data.json` - Current offer data (auto-updated)
+- `current_data.json` - Current offer data (auto-updated)
 - `trigger_workflow.sh` - Script for automated execution

@@ -89,10 +89,9 @@ async def parse_with_auto_pagination(base_url, browser_config, scripts, max_page
             await browser.close()
 
 
-async def parse_cian_auto(data_file='parsed_data.json'):
+async def parse_cian_auto(data_file='current_data.json'):
     """Main function with automatic pagination"""
 
-    # Generate base URL using construct_url.py
     with open("config_search.yaml", "r") as f:
         search_config = yaml.safe_load(f)
     with open("config_browser.yaml", "r") as f:
@@ -105,7 +104,7 @@ async def parse_cian_auto(data_file='parsed_data.json'):
     print("\nSearch parameters:")
     for key, value in search_config.items():
         print(f"  {key}: {value}")
-        
+    # Generate base URL
     base_url = construct_cian_url(search_config)
     current_data = await parse_with_auto_pagination(base_url, browser_config, scripts)
 
