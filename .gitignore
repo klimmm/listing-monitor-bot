@@ -8,3 +8,4 @@ __pycache__/
 .DS_Store
 fetch_latest_data.py
 auto_pull.sh
+.ipynb_checkpoints/
