@@ -1,9 +1,26 @@
 import asyncio
 import json
 import yaml
+import os
 from playwright.async_api import async_playwright
 from telegram_bot import TelegramBot
 from helpers import track_changes, construct_cian_url
+
+
+def load_telegram_config():
+    """Load telegram config with bot_token.txt fallback for local development"""
+    with open("config_telegram.yaml", "r") as f:
+        config = yaml.safe_load(f)
+    
+    # Check if bot_token.txt exists (for local development)
+    if os.path.exists("bot_token.txt"):
+        with open("bot_token.txt", "r") as f:
+            config["token"] = f.read().strip()
+        print("🔑 Using local bot token from bot_token.txt")
+    else:
+        print("🔑 Using bot token from config_telegram.yaml")
+    
+    return config
 
 
 async def parse_single_url(context, url, browser_config, scripts):
@@ -96,8 +113,7 @@ async def parse_cian_auto(data_file='current_data.json'):
         search_config = yaml.safe_load(f)
     with open("config_browser.yaml", "r") as f:
         browser_config = yaml.safe_load(f)
-    with open("config_telegram.yaml", "r") as f:
-        telegram_config = yaml.safe_load(f)
+    telegram_config = load_telegram_config()
     with open("config_scripts.yaml", "r") as f:
         scripts = yaml.safe_load(f)
 
