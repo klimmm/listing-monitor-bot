@@ -5,10 +5,9 @@ import os
 from playwright.async_api import async_playwright
 from telegram_bot import TelegramBot
 from helpers import track_changes, construct_search_url
-from dotenv import load_dotenv
-
 # Load .env file if it exists
 try:
+    from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
     # dotenv not installed, skip

@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install playwright requests pyyaml asyncio
+        pip install playwright requests pyyaml asyncio python-dotenv
         playwright install chromium
         
     - name: Run bot
