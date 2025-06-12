@@ -29,7 +29,7 @@ Add these secrets to your GitHub repository (`Settings` > `Secrets and variables
 
 ### 3. Workflow Schedule
 
-The bot runs automatically every 30 minutes. You can also trigger it manually from the Actions tab.
+The bot runs automatically every 5 minutes. You can also trigger it manually from the Actions tab.
 
 ## Local Development
 
