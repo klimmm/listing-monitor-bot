@@ -6,3 +6,5 @@ chat_id.txt
 __pycache__/
 *.pyc
 .DS_Store
+fetch_latest_data.py
+auto_pull.sh

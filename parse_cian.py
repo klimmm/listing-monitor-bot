@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timedelta
 import re
 from playwright.async_api import async_playwright
-from parse_date import parse_russian_date
+from helpers import parse_russian_date
 from telegram_bot import TelegramBot
 
 
