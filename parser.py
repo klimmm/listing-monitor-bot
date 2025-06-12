@@ -4,7 +4,7 @@ import yaml
 import os
 from playwright.async_api import async_playwright
 from telegram_bot import TelegramBot
-from helpers import track_changes, construct_cian_url
+from helpers import track_changes, construct_search_url
 
 
 def load_telegram_config():
@@ -106,7 +106,7 @@ async def parse_with_auto_pagination(base_url, browser_config, scripts, max_page
             await browser.close()
 
 
-async def parse_cian_auto(data_file='current_data.json'):
+async def parse_listings_auto(data_file='current_data.json'):
     """Main function with automatic pagination"""
 
     with open("config_search.yaml", "r") as f:
@@ -121,7 +121,7 @@ async def parse_cian_auto(data_file='current_data.json'):
     for key, value in search_config.items():
         print(f"  {key}: {value}")
     # Generate base URL
-    base_url = construct_cian_url(search_config)
+    base_url = construct_search_url(search_config)
     current_data = await parse_with_auto_pagination(base_url, browser_config, scripts)
 
     # Track changes
@@ -140,4 +140,4 @@ async def parse_cian_auto(data_file='current_data.json'):
 
 
 if __name__ == "__main__":
-    asyncio.run(parse_cian_auto())
+    asyncio.run(parse_listings_auto())

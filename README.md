@@ -1,6 +1,6 @@
-# Telegram Bot for Cian Real Estate Monitoring
+# Telegram Bot for Real Estate Monitoring
 
-This bot monitors Cian real estate listings and sends Telegram notifications for:
+This bot monitors real estate listings and sends Telegram notifications for:
 - New offers
 - Price changes
 - Removed offers

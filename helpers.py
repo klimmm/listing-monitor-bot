@@ -46,7 +46,7 @@ def track_changes(current_data, previous_data):
     return changes
 
 
-def construct_cian_url(config):
+def construct_search_url(config):
     import os
     
     # Get base URL from local file, environment variable, or placeholder
