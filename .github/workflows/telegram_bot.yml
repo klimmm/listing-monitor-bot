@@ -30,6 +30,10 @@ jobs:
         pip install playwright requests pyyaml asyncio
         playwright install chromium
         
+    - name: Update bot token in config
+      run: |
+        sed -i "s/YOUR_BOT_TOKEN_HERE/${{ secrets.BOT_TOKEN }}/" config_telegram.yaml
+        
     - name: Run bot
       run: python parser.py
       
