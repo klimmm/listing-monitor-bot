@@ -1,4 +1,7 @@
 import os
+from datetime import datetime, timedelta
+import re
+
 
 def print_change(current_offer=None, previous_offer=None):
     if previous_offer is not None and current_offer is not None:
@@ -49,9 +52,9 @@ def track_changes(current_data, previous_data):
 
 
 def construct_search_url(config):
-    
-    base_url = os.getenv('BASE_URL')
-    
+
+    base_url = os.getenv("BASE_URL")
+
     url = f"{base_url}/cat.php?currency=2&engine_version=2&type=4&deal_type=rent&sort=creation_date_desc&"
 
     for key in config:
@@ -73,15 +76,15 @@ def construct_search_url(config):
 
 def construct_offer_url(offer_id):
     """Construct offer URL using environment variable"""
-    
-    base_url = os.getenv('BASE_URL')
-    
+
+    base_url = os.getenv("BASE_URL")
+
     return f"{base_url}/rent/flat/{offer_id}/"
 
 
 def format_offer(offer):
     """Format offer data for Telegram message"""
-    offer_url = construct_offer_url(offer['offer_id'])
+    offer_url = construct_offer_url(offer["offer_id"])
     fields = [
         (f"<b>{offer['time_label']}</b>",),
         (f"<b>{offer['sub_district']}, {offer['metro']}</b>",),
@@ -120,3 +123,82 @@ def format_change(change):
 
     else:
         raise ValueError("Change must have either current_offer or previous_offer")
+
+
+def parse_russian_date(time_label):
+    """Parse Russian time labels to YYYY-MM-DD HH:MM:SS format"""
+    if not time_label:
+        return None
+
+    now = datetime.now()
+    months = {
+        "янв": 1,
+        "фев": 2,
+        "мар": 3,
+        "апр": 4,
+        "май": 5,
+        "июн": 6,
+        "июл": 7,
+        "авг": 8,
+        "сен": 9,
+        "окт": 10,
+        "ноя": 11,
+        "дек": 12,
+    }
+
+    try:
+        # Pattern 1: "сегодня, HH:MM"
+        if "сегодня" in time_label:
+            match = re.search(r"(\d{1,2}):(\d{2})", time_label)
+            if match:
+                hour, minute = int(match.group(1)), int(match.group(2))
+                result = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                return result.strftime("%Y-%m-%d %H:%M:%S")
+
+        # Pattern 2: "вчера, HH:MM"
+        elif "вчера" in time_label:
+            match = re.search(r"(\d{1,2}):(\d{2})", time_label)
+            if match:
+                hour, minute = int(match.group(1)), int(match.group(2))
+                result = now - timedelta(days=1)
+                result = result.replace(
+                    hour=hour, minute=minute, second=0, microsecond=0
+                )
+                return result.strftime("%Y-%m-%d %H:%M:%S")
+
+        # Pattern 3: "DD месяц, HH:MM"
+        else:
+            match = re.search(
+                r"(\d{1,2})\s+([а-яА-Я]+),?\s+(\d{1,2}):(\d{2})", time_label
+            )
+            if match:
+                day = int(match.group(1))
+                month_name = match.group(2).lower()
+                hour = int(match.group(3))
+                minute = int(match.group(4))
+
+                if month_name in months:
+                    month = months[month_name]
+                    year = now.year
+
+                    result = datetime(year, month, day, hour, minute, 0)
+
+                    # If date is in future, it's from last year
+                    if result > now:
+                        result = result.replace(year=year - 1)
+
+                    return result.strftime("%Y-%m-%d %H:%M:%S")
+
+    except Exception as e:
+        print(f"Error parsing time label '{time_label}': {e}")
+
+    return time_label  # Return original if parsing fails
+
+
+def normalize_offer_data(offers):
+    """Normalize offer data after parsing (modifies in-place)"""
+    for offer in offers:
+        # Parse Russian dates
+        if "time_label" in offer and offer["time_label"]:
+            offer["time_label_parsed"] = parse_russian_date(offer["time_label"])
+    return offers

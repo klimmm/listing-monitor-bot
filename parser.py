@@ -4,10 +4,12 @@ import yaml
 import os
 from playwright.async_api import async_playwright
 from telegram_bot import TelegramBot
-from helpers import track_changes, construct_search_url
+from helpers import track_changes, construct_search_url, normalize_offer_data
+
 # Load .env file if it exists
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     # dotenv not installed, skip
@@ -119,6 +121,9 @@ async def parse_listings_auto(data_file="current_data.json"):
     # Generate base URL
     base_url = construct_search_url(search_config)
     current_data = await parse_with_auto_pagination(base_url, browser_config, scripts)
+
+    # Normalize offer data (parse dates, etc.)
+    current_data = normalize_offer_data(current_data)
 
     # Track changes
     with open(data_file, "r", encoding="utf-8") as f:
