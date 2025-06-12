@@ -180,7 +180,7 @@ primary_script: |
                         building_id: buildingId,
                         full_address: fullAddress,                        
                         rental_period: rentalPeriod,
-                        utilities_included: utilitiesIncluded,
+                        utilities: utilitiesIncluded,
                         commission: commission,
                         deposit: deposit,
                         description: description,

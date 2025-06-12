@@ -1,8 +1,0 @@
-token: YOUR_BOT_TOKEN_HERE
-chat_ids:
-  - 252024578
-  - 405047907
-
-max_retries: 3
-retry_delay: 1  # Initial delay in seconds
-max_delay: 30   # Maximum delay between retries

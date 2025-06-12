@@ -99,16 +99,16 @@ async def parse_with_auto_pagination(base_url, browser_config, scripts, max_page
             await browser.close()
 
 
-async def parse_listings_auto(data_file="current_data.json"):
+async def parse_listings_auto(data_file="data/current_data.json"):
     """Main function with automatic pagination"""
 
-    with open("config_search.yaml", "r") as f:
+    with open("configs/config_search.yaml", "r") as f:
         search_config = yaml.safe_load(f)
-    with open("config_browser.yaml", "r") as f:
+    with open("configs/config_browser.yaml", "r") as f:
         browser_config = yaml.safe_load(f)
-    with open("config_scripts.yaml", "r") as f:
+    with open("configs/config_scripts.yaml", "r") as f:
         scripts = yaml.safe_load(f)
-    with open("config_telegram.yaml", "r") as f:
+    with open("configs/config_telegram.yaml", "r") as f:
         telegram_config = yaml.safe_load(f)
     bot_token = os.getenv("BOT_TOKEN")
     if bot_token:

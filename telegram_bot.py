@@ -1,5 +1,8 @@
 import requests
 import time
+import json
+import os
+from datetime import datetime
 from helpers import format_change
 
 
@@ -11,6 +14,40 @@ class TelegramBot:
         self.max_retries = config.get("max_retries", 3)
         self.retry_delay = config.get("retry_delay", 1)
         self.max_delay = config.get("max_delay", 30)
+        self.message_log_file = config.get("message_log_file", "data/telegram_messages.json")
+
+    def _log_message(self, chat_id, text, success, error_message=None):
+        """Log sent message to JSON file"""
+        try:
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(self.message_log_file), exist_ok=True)
+            
+            # Load existing messages
+            messages = []
+            if os.path.exists(self.message_log_file):
+                try:
+                    with open(self.message_log_file, 'r', encoding='utf-8') as f:
+                        messages = json.load(f)
+                except json.JSONDecodeError:
+                    messages = []
+            
+            # Create message entry
+            message_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "chat_id": chat_id,
+                "text": text,
+                "success": success,
+                "error_message": error_message
+            }
+            
+            messages.append(message_entry)
+            
+            # Save updated messages
+            with open(self.message_log_file, 'w', encoding='utf-8') as f:
+                json.dump(messages, f, ensure_ascii=False, indent=2)
+                
+        except Exception as e:
+            print(f"⚠️  Failed to log message: {e}")
 
     def send_message_with_retry(self, chat_id, text, parse_mode="HTML"):
         """Send a message to a single chat with retry logic"""
@@ -27,6 +64,7 @@ class TelegramBot:
                 response = requests.post(url, data=data, timeout=10)
                 response.raise_for_status()
                 print(f"✅ Message sent to chat {chat_id}")
+                self._log_message(chat_id, text, success=True)
                 return True
 
             except requests.exceptions.RequestException as e:
@@ -38,6 +76,7 @@ class TelegramBot:
                     time.sleep(delay)
                 else:
                     print(f"❌ All attempts failed for chat {chat_id}: {e}")
+                    self._log_message(chat_id, text, success=False, error_message=str(e))
                     return False
 
         return False
