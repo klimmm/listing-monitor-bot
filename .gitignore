@@ -1,5 +1,6 @@
 config.yaml
 .env
+.envrc
 bot_config.txt
 bot_token.txt
 chat_id.txt

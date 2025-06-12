@@ -1,3 +1,5 @@
+import os
+
 def print_change(current_offer=None, previous_offer=None):
     if previous_offer is not None and current_offer is not None:
         print(f"\nPrice change: {current_offer['offer_id']}")
@@ -47,14 +49,8 @@ def track_changes(current_data, previous_data):
 
 
 def construct_search_url(config):
-    import os
     
-    # Get base URL from local file, environment variable, or placeholder
-    if os.path.exists('base_url.txt'):
-        with open('base_url.txt', 'r') as f:
-            base_url = f.read().strip()
-    else:
-        base_url = os.getenv('BASE_URL', 'DEFAULT_BASE_URL_PLACEHOLDER')
+    base_url = os.getenv('BASE_URL')
     
     url = f"{base_url}/cat.php?currency=2&engine_version=2&type=4&deal_type=rent&sort=creation_date_desc&"
 
@@ -76,15 +72,9 @@ def construct_search_url(config):
 
 
 def construct_offer_url(offer_id):
-    """Construct offer URL using base_url.txt or environment variable"""
-    import os
+    """Construct offer URL using environment variable"""
     
-    # Get base URL from local file, environment variable, or placeholder
-    if os.path.exists('base_url.txt'):
-        with open('base_url.txt', 'r') as f:
-            base_url = f.read().strip()
-    else:
-        base_url = os.getenv('BASE_URL', 'DEFAULT_BASE_URL_PLACEHOLDER')
+    base_url = os.getenv('BASE_URL')
     
     return f"{base_url}/rent/flat/{offer_id}/"
 

@@ -5,22 +5,14 @@ import os
 from playwright.async_api import async_playwright
 from telegram_bot import TelegramBot
 from helpers import track_changes, construct_search_url
+from dotenv import load_dotenv
 
-
-def load_telegram_config():
-    """Load telegram config with bot_token.txt fallback for local development"""
-    with open("config_telegram.yaml", "r") as f:
-        config = yaml.safe_load(f)
-    
-    # Check if bot_token.txt exists (for local development)
-    if os.path.exists("bot_token.txt"):
-        with open("bot_token.txt", "r") as f:
-            config["token"] = f.read().strip()
-        print("🔑 Using local bot token from bot_token.txt")
-    else:
-        print("🔑 Using bot token from config_telegram.yaml")
-    
-    return config
+# Load .env file if it exists
+try:
+    load_dotenv()
+except ImportError:
+    # dotenv not installed, skip
+    pass
 
 
 async def parse_single_url(context, url, browser_config, scripts):
@@ -72,7 +64,7 @@ async def parse_with_auto_pagination(base_url, browser_config, scripts, max_page
             unique_offers = {}
 
             print(f"\n{'='*60}")
-            
+
             for page_num in range(1, max_pages + 1):
                 # Generate URL for this page
                 page_url = f"{base_url}&p={page_num}"
@@ -97,7 +89,7 @@ async def parse_with_auto_pagination(base_url, browser_config, scripts, max_page
                     break
 
             unique_offers_list = list(unique_offers.values())
-            
+
             print(f"\n🎯 TOTAL UNIQUE OFFERS: {len(unique_offers_list)}")
 
             return unique_offers_list
@@ -106,16 +98,21 @@ async def parse_with_auto_pagination(base_url, browser_config, scripts, max_page
             await browser.close()
 
 
-async def parse_listings_auto(data_file='current_data.json'):
+async def parse_listings_auto(data_file="current_data.json"):
     """Main function with automatic pagination"""
 
     with open("config_search.yaml", "r") as f:
         search_config = yaml.safe_load(f)
     with open("config_browser.yaml", "r") as f:
         browser_config = yaml.safe_load(f)
-    telegram_config = load_telegram_config()
     with open("config_scripts.yaml", "r") as f:
         scripts = yaml.safe_load(f)
+    with open("config_telegram.yaml", "r") as f:
+        telegram_config = yaml.safe_load(f)
+    bot_token = os.getenv("BOT_TOKEN")
+    if bot_token:
+        telegram_config["token"] = bot_token
+        print("🔑 Using bot token from BOT_TOKEN environment variable")
 
     print("\nSearch parameters:")
     for key, value in search_config.items():
