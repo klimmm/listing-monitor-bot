@@ -5,25 +5,23 @@ from datetime import datetime
 
 class TelegramBot:
     def __init__(self):
-        self.bot_token = self._load_bot_token()
-        self.chat_id = self._load_chat_id()
+        self._load_config()
         self.base_url = f"https://api.telegram.org/bot{self.bot_token}"
 
-    def _load_bot_token(self):
-        """Load bot token from file"""
+    def _load_config(self):
+        """Load bot configuration from file"""
         try:
-            with open('bot_token.txt', 'r') as f:
-                return f.read().strip()
+            with open('bot_config.txt', 'r') as f:
+                for line in f:
+                    if line.startswith('BOT_TOKEN='):
+                        self.bot_token = line.split('=', 1)[1].strip()
+                    elif line.startswith('CHAT_ID='):
+                        self.chat_id = line.split('=', 1)[1].strip()
+            
+            if not hasattr(self, 'bot_token') or not hasattr(self, 'chat_id'):
+                raise Exception("Missing BOT_TOKEN or CHAT_ID in bot_config.txt")
         except FileNotFoundError:
-            raise Exception("Bot token file not found. Please create bot_token.txt with your bot token.")
-
-    def _load_chat_id(self):
-        """Load chat ID from file"""
-        try:
-            with open('chat_id.txt', 'r') as f:
-                return f.read().strip()
-        except FileNotFoundError:
-            raise Exception("Chat ID file not found. Please create chat_id.txt with your chat ID.")
+            raise Exception("Configuration file not found. Please create bot_config.txt with BOT_TOKEN and CHAT_ID.")
 
     def _send_message(self, text, parse_mode='HTML'):
         """Send a message to Telegram"""

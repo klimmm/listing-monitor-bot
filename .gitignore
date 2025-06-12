@@ -1,5 +1,6 @@
 bot_token.txt
 chat_id.txt
+bot_config.txt
 __pycache__/
 *.pyc
 .env

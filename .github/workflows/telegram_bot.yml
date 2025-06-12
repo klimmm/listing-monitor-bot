@@ -30,10 +30,10 @@ jobs:
         pip install playwright requests pyyaml asyncio
         playwright install chromium
         
-    - name: Create bot credentials
+    - name: Create bot configuration
       run: |
-        echo "${{ secrets.BOT_TOKEN }}" > bot_token.txt
-        echo "${{ secrets.CHAT_ID }}" > chat_id.txt
+        echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" > bot_config.txt
+        echo "CHAT_ID=${{ secrets.CHAT_ID }}" >> bot_config.txt
         
     - name: Run bot
       run: python parse_cian.py
