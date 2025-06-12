@@ -32,18 +32,20 @@ jobs:
         
     - name: Create bot configuration
       run: |
-        cat > config.yaml << EOF
-        bot:
-          token: ${{ secrets.BOT_TOKEN }}
-          chat_ids:
-            - ${{ secrets.CHAT_ID }}
+        cat > config_telegram.yaml << EOF
+        token: ${{ secrets.BOT_TOKEN }}
+        chat_ids:
+          - ${{ secrets.CHAT_ID }}
+        max_retries: 3
+        retry_delay: 1
+        max_delay: 30
         EOF
         
     - name: Run bot
-      run: python parse_cian.py
+      run: python parser.py
       
     - name: Commit and push changes
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: 'Auto-update data [skip ci]'
-        file_pattern: 'parsed_data.json'
+        file_pattern: 'current_data.json'
