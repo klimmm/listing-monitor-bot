@@ -1,193 +1,128 @@
 import asyncio
 import json
 import yaml
-import os
-from datetime import datetime, timedelta
-import re
 from playwright.async_api import async_playwright
-from helpers import parse_russian_date
 from telegram_bot import TelegramBot
+from helpers import track_changes, construct_cian_url
 
 
-def load_previous_data():
-    """Load previous run data if exists"""
-    if os.path.exists('parsed_data.json'):
-        try:
-            with open('parsed_data.json', 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return []
-    return []
+async def parse_single_url(context, url, browser_config, scripts):
+    """Parse a single URL and return offers"""
+    print(f"\nParsing: {url[:200]}...")
+
+    page = await context.new_page()
+
+    try:
+        # Navigate to URL
+        await page.goto(
+            url,
+            wait_until=browser_config["wait_until"],
+            timeout=browser_config["timeouts"]["wait_until"],
+        )
+
+        # Wait for content to load using the wait function
+        await page.wait_for_function(
+            scripts["wait_for_function"],
+            timeout=browser_config["timeouts"]["wait_for_function"],
+        )
+
+        # Execute the primary script to extract data
+        data = await page.evaluate(scripts["primary_script"])
+
+        print(f"Found {len(data)} offers")
+        return data
+
+    except Exception as e:
+        print(f"Error parsing URL: {e}")
+        return []
+
+    finally:
+        await page.close()
 
 
-def track_changes(current_data):
-    """Compare current data with previous run to detect changes"""
-    previous_data = load_previous_data()
-    
-    # Create lookup dictionaries
-    previous_offers = {item['offer_id']: item for item in previous_data}
-    current_offers = {item['offer_id']: item for item in current_data}
-    
-    # Find new offers
-    new_offers = []
-    for offer_id, offer in current_offers.items():
-        if offer_id not in previous_offers:
-            new_offers.append(offer)
-    
-    # Find removed offers
-    removed_offers = []
-    for offer_id, offer in previous_offers.items():
-        if offer_id not in current_offers:
-            removed_offers.append(offer)
-    
-    # Find price changes
-    price_changes = []
-    for offer_id, current_offer in current_offers.items():
-        if offer_id in previous_offers:
-            previous_offer = previous_offers[offer_id]
-            if (current_offer.get('price') != previous_offer.get('price') and 
-                current_offer.get('price') is not None and 
-                previous_offer.get('price') is not None):
-                price_changes.append({
-                    'offer': current_offer,
-                    'old_price': previous_offer['price'],
-                    'new_price': current_offer['price'],
-                    'price_diff': current_offer['price'] - previous_offer['price']
-                })
-    
-    return {
-        'new_offers': new_offers,
-        'removed_offers': removed_offers,
-        'price_changes': price_changes
-    }
+async def parse_with_auto_pagination(base_url, browser_config, scripts, max_pages=20):
+    """Parse URL with automatic pagination detection"""
 
-
-def show_changes(changes):
-    """Display detailed information about changes"""
-    if changes['new_offers']:
-        print(f"\n🆕 NEW OFFERS ({len(changes['new_offers'])}):")
-        for offer in changes['new_offers']:
-            price_str = f"{offer['price']:,} ₽" if offer['price'] else "Price not specified"
-            metro_str = f" • {offer['metro_station']}" if offer['metro_station'] else ""
-            print(f"  • {offer['offer_id']}: {price_str}{metro_str}")
-            if offer['title']:
-                print(f"    {offer['title'][:80]}...")
-    
-    if changes['price_changes']:
-        print(f"\n💰 PRICE CHANGES ({len(changes['price_changes'])}):")
-        for change in changes['price_changes']:
-            offer = change['offer']
-            old_price = f"{change['old_price']:,} ₽"
-            new_price = f"{change['new_price']:,} ₽"
-            diff = change['price_diff']
-            direction = "📈" if diff > 0 else "📉"
-            diff_str = f"{abs(diff):,} ₽"
-            metro_str = f" • {offer['metro_station']}" if offer['metro_station'] else ""
-            print(f"  • {offer['offer_id']}: {old_price} → {new_price} ({direction} {diff_str}){metro_str}")
-    
-    if changes['removed_offers']:
-        print(f"\n❌ REMOVED OFFERS ({len(changes['removed_offers'])}):")
-        for offer in changes['removed_offers']:
-            price_str = f"{offer['price']:,} ₽" if offer['price'] else "Price not specified"
-            metro_str = f" • {offer['metro_station']}" if offer['metro_station'] else ""
-            print(f"  • {offer['offer_id']}: {price_str}{metro_str}")
-
-
-
-
-async def parse_cian():
-    # Read URLs from file
-    with open('url.txt', 'r') as f:
-        urls = [line.strip() for line in f.readlines() if line.strip() and line.strip().startswith('http')]
-    
     # Read scripts from YAML file
-    with open('scripts.yaml', 'r') as f:
-        scripts = yaml.safe_load(f)
-    
-    primary_script = scripts['primary_script']
-    wait_for_function = scripts['wait_for_function']
-    
-    async def parse_single_url(context, url, index):
-        print(f"\nParsing URL {index+1}/{len(urls)}: {url[:80]}...")
-        
-        page = await context.new_page()
-        
-        try:
-            # Navigate to URL
-            await page.goto(url, wait_until='domcontentloaded', timeout=15000)
-            
-            # Wait for content to load using the wait function
-            await page.wait_for_function(wait_for_function, timeout=10000)
-            
-            # Execute the primary script to extract data
-            data = await page.evaluate(primary_script)
-            
-            # Process dates in Python
-            for item in data:
-                if 'time_label' in item and item['time_label']:
-                    item['time_label'] = parse_russian_date(item['time_label'])
-            
-            print(f"Found {len(data)} offers on URL {index+1}")
-            return data
-            
-        finally:
-            await page.close()
-    
     async with async_playwright() as p:
         # Launch browser
         browser = await p.chromium.launch(
-            headless=True,
-            args=['--disable-blink-features=AutomationControlled']
+            headless=browser_config["headless"], args=browser_config["args"]
         )
-        context = await browser.new_context(
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        )
-        
+        context = await browser.new_context(user_agent=browser_config["user_agent"])
+
         try:
-            # Process all URLs in parallel
-            tasks = [parse_single_url(context, url, i) for i, url in enumerate(urls)]
-            results = await asyncio.gather(*tasks)
+            unique_offers = {}
+
+            print(f"\n{'='*60}")
             
-            # Combine all results
-            all_data = []
-            for data in results:
-                all_data.extend(data)
+            for page_num in range(1, max_pages + 1):
+                # Generate URL for this page
+                page_url = f"{base_url}&p={page_num}"
+
+                # Parse this page
+                page_offers = await parse_single_url(
+                    context, page_url, browser_config, scripts
+                )
+
+                # Check for new offers
+                new_offers_count = 0
+                for offer in page_offers:
+                    offer_id = offer.get("offer_id")
+                    if offer_id and offer_id not in unique_offers:
+                        unique_offers[offer_id] = offer
+                        new_offers_count += 1
+
+                print(f"Page {page_num}: {new_offers_count} unique offers")
+
+                # If no new offers found, increment counter
+                if new_offers_count == 0:
+                    break
+
+            unique_offers_list = list(unique_offers.values())
             
-            # Remove duplicates based on offer_id
-            unique_data = []
-            seen_ids = set()
-            for item in all_data:
-                if item['offer_id'] not in seen_ids:
-                    seen_ids.add(item['offer_id'])
-                    unique_data.append(item)
-            
-            # Track changes
-            changes = track_changes(unique_data)
-            
-            # Send Telegram notifications
-            bot = TelegramBot()
-            if any(changes.values()):
-                bot.send_tracking_updates(changes)
-            
-            # Print results
-            print(f"\nTotal found {len(unique_data)} unique offers")
-            if changes['new_offers']:
-                print(f"🆕 {len(changes['new_offers'])} new offers found!")
-            if changes['price_changes']:
-                print(f"💰 {len(changes['price_changes'])} price changes detected!")
-            if changes['removed_offers']:
-                print(f"❌ {len(changes['removed_offers'])} offers removed")
-            
-            # Show detailed changes
-            show_changes(changes)
-            
-            # Save current data
-            with open('parsed_data.json', 'w', encoding='utf-8') as f:
-                json.dump(unique_data, f, ensure_ascii=False, indent=2)
-            
+            print(f"\n🎯 TOTAL UNIQUE OFFERS: {len(unique_offers_list)}")
+
+            return unique_offers_list
+
         finally:
             await browser.close()
 
 
+async def parse_cian_auto(data_file='parsed_data.json'):
+    """Main function with automatic pagination"""
+
+    # Generate base URL using construct_url.py
+    with open("config_search.yaml", "r") as f:
+        search_config = yaml.safe_load(f)
+    with open("config_browser.yaml", "r") as f:
+        browser_config = yaml.safe_load(f)
+    with open("config_telegram.yaml", "r") as f:
+        telegram_config = yaml.safe_load(f)
+    with open("config_scripts.yaml", "r") as f:
+        scripts = yaml.safe_load(f)
+
+    print("\nSearch parameters:")
+    for key, value in search_config.items():
+        print(f"  {key}: {value}")
+        
+    base_url = construct_cian_url(search_config)
+    current_data = await parse_with_auto_pagination(base_url, browser_config, scripts)
+
+    # Track changes
+    with open(data_file, "r", encoding="utf-8") as f:
+        previous_data = json.load(f)
+    changes = track_changes(current_data, previous_data)
+
+    # Send Telegram notifications
+    bot = TelegramBot(telegram_config)
+    if changes:
+        bot.send_tracking_updates(changes)
+
+    # Save current data
+    with open(data_file, "w", encoding="utf-8") as f:
+        json.dump(current_data, f, ensure_ascii=False, indent=2)
+
+
 if __name__ == "__main__":
-    asyncio.run(parse_cian())
+    asyncio.run(parse_cian_auto())

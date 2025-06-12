@@ -1,0 +1,8 @@
+user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+args:
+  - '--disable-blink-features=AutomationControlled'
+headless: true
+wait_until: 'domcontentloaded'
+timeouts:
+  wait_until: 15000
+  wait_for_function: 10000

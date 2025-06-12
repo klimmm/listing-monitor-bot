@@ -1,0 +1,41 @@
+# Cian.ru search configuration
+maxprice: 85000
+# districts:
+# 21 - Хамовники
+# 22 - Якиманка
+# 13 - Арбат
+# 113 - Дорогомилово
+district:
+  - 21
+  - 13
+  - 22
+# Room types:
+# 1-5: number of rooms
+# 6: 6+ rooms
+# 7: free layout (свободная планировка)
+# 9: studio
+# empty list: show all rooms (no room filtering)
+rooms: []
+# rooms:  # Or use specific room types
+#   - 1
+#   - 2
+#   - 3
+#   - 4
+#   - 5
+#   - 6
+#   - 7
+#   - 9
+# 2306 - Украинский бульвар
+# 685 - Бережковская набержная
+# 3248 - Кутузовский
+# 2616 - наб. Тараса Шевченко
+# 1246 - Косыгина
+# 1150 - Капранова пер.
+# 1598 - Николаева ул.
+street: 
+  - 685
+  - 2306  
+  - 2616
+  - 1246
+  - 1150
+  - 1598

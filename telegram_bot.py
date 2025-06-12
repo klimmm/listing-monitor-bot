@@ -1,193 +1,80 @@
 import requests
-import os
-import yaml
-from datetime import datetime
+import time
+from helpers import format_change
 
 
 class TelegramBot:
-    def __init__(self):
-        self._load_config()
+    def __init__(self, config):
+        self.bot_token = config["token"]
+        self.chat_ids = [str(id) for id in config["chat_ids"]]
         self.base_url = f"https://api.telegram.org/bot{self.bot_token}"
+        self.max_retries = config.get("max_retries", 3)
+        self.retry_delay = config.get("retry_delay", 1)
+        self.max_delay = config.get("max_delay", 30)
 
-    def _load_config(self):
-        """Load bot configuration from YAML file"""
-        try:
-            with open('config.yaml', 'r') as f:
-                config = yaml.safe_load(f)
-            
-            self.bot_token = config['bot']['token']
-            self.chat_ids = [str(id) for id in config['bot']['chat_ids']]
-            
-            if not self.bot_token or not self.chat_ids:
-                raise Exception("Missing token or chat_ids in config.yaml")
-        except FileNotFoundError:
-            raise Exception("Configuration file not found. Please create config.yaml with bot token and chat IDs.")
-        except KeyError as e:
-            raise Exception(f"Invalid config.yaml structure: missing {e}")
-        except Exception as e:
-            raise Exception(f"Error reading config.yaml: {e}")
-
-    def _send_message(self, text, parse_mode='HTML'):
-        """Send a message to all Telegram chat IDs"""
+    def send_message_with_retry(self, chat_id, text, parse_mode="HTML"):
+        """Send a message to a single chat with retry logic"""
         url = f"{self.base_url}/sendMessage"
-        success = True
-        
-        for chat_id in self.chat_ids:
-            data = {
-                'chat_id': chat_id,
-                'text': text,
-                'parse_mode': parse_mode,
-                'disable_web_page_preview': True
-            }
-            
+        data = {
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": parse_mode,
+            "disable_web_page_preview": False,
+        }
+
+        for attempt in range(self.max_retries):
             try:
                 response = requests.post(url, data=data, timeout=10)
                 response.raise_for_status()
                 print(f"✅ Message sent to chat {chat_id}")
+                return True
+
             except requests.exceptions.RequestException as e:
-                print(f"❌ Error sending to chat {chat_id}: {e}")
-                success = False
-        
-        return success
+                if attempt < self.max_retries - 1:
+                    # Calculate delay with exponential backoff
+                    delay = min(self.retry_delay * (2**attempt), self.max_delay)
+                    print(f"⚠️  Attempt {attempt + 1} failed for chat {chat_id}: {e}")
+                    print(f"⏳ Retrying in {delay} seconds...")
+                    time.sleep(delay)
+                else:
+                    print(f"❌ All attempts failed for chat {chat_id}: {e}")
+                    return False
 
-    def _format_offer(self, offer):
-        """Format offer data for Telegram message"""
-        price_str = f"{offer['price']:,} ₽" if offer['price'] else "Цена не указана"
-        metro_str = f"🚇 {offer['metro_station']}" if offer['metro_station'] else ""
-        walking_time_str = f" ({offer['walking_time']})" if offer['walking_time'] else ""
-        
-        location = ""
-        if offer.get('street'):
-            location = f"📍 {offer['street']}"
-            if offer.get('building_number'):
-                location += f", {offer['building_number']}"
-        
-        rental_period = f"📅 {offer['rental_period']}" if offer.get('rental_period') else ""
-        commission = f"💼 {offer['commission']}" if offer.get('commission') else ""
-        deposit = f"💰 Залог: {offer['deposit']}" if offer.get('deposit') and offer['deposit'] != 'без залога' else ""
-        
-        details = []
-        if metro_str:
-            details.append(f"{metro_str}{walking_time_str}")
-        if location:
-            details.append(location)
-        if rental_period:
-            details.append(rental_period)
-        if commission:
-            details.append(commission)
-        if deposit:
-            details.append(deposit)
-        
-        details_str = "\n".join(details) if details else ""
-        
-        message = f"<b>{offer['title']}</b>\n"
-        message += f"💵 <b>{price_str}</b>\n"
-        if details_str:
-            message += f"{details_str}\n"
-        message += f"🔗 <a href=\"{offer['offer_url']}\">Посмотреть объявление</a>"
-        
-        return message
+        return False
 
-    def _format_offer_without_price(self, offer):
-        """Format offer data for Telegram message without price (for price change notifications)"""
-        metro_str = f"🚇 {offer['metro_station']}" if offer['metro_station'] else ""
-        walking_time_str = f" ({offer['walking_time']})" if offer['walking_time'] else ""
-        
-        location = ""
-        if offer.get('street'):
-            location = f"📍 {offer['street']}"
-            if offer.get('building_number'):
-                location += f", {offer['building_number']}"
-        
-        rental_period = f"📅 {offer['rental_period']}" if offer.get('rental_period') else ""
-        commission = f"💼 {offer['commission']}" if offer.get('commission') else ""
-        deposit = f"💰 Залог: {offer['deposit']}" if offer.get('deposit') and offer['deposit'] != 'без залога' else ""
-        
-        details = []
-        if metro_str:
-            details.append(f"{metro_str}{walking_time_str}")
-        if location:
-            details.append(location)
-        if rental_period:
-            details.append(rental_period)
-        if commission:
-            details.append(commission)
-        if deposit:
-            details.append(deposit)
-        
-        details_str = "\n".join(details) if details else ""
-        
-        message = f"<b>{offer['title']}</b>\n"
-        if details_str:
-            message += f"{details_str}\n"
-        message += f"🔗 <a href=\"{offer['offer_url']}\">Посмотреть объявление</a>"
-        
-        return message
+    def send_message(self, text, parse_mode="HTML"):
+        """Send a message to all Telegram chat IDs with retry logic"""
+        success_count = 0
+        failed_chats = []
 
-    def send_new_offer(self, offer):
-        """Send notification about new offer"""
-        header = "🆕 <b>НОВОЕ ПРЕДЛОЖЕНИЕ</b>\n\n"
-        message = header + self._format_offer(offer)
-        return self._send_message(message)
+        for i, chat_id in enumerate(self.chat_ids):
+            # Add a small delay between messages to avoid rate limiting
+            if i > 0:
+                time.sleep(0.5)
 
-    def send_price_change(self, change):
-        """Send notification about price change"""
-        offer = change['offer']
-        old_price = f"{change['old_price']:,} ₽"
-        new_price = f"{change['new_price']:,} ₽"
-        diff = change['price_diff']
-        
-        if diff > 0:
-            direction = "📈"
-            change_type = "ЦЕНА ВЫРОСЛА"
-            diff_str = f"+{abs(diff):,} ₽"
+            if self.send_message_with_retry(chat_id, text, parse_mode):
+                success_count += 1
+            else:
+                failed_chats.append(chat_id)
+
+        # Summary
+        if failed_chats:
+            print(
+                f"\n📊 Summary: {success_count}/{len(self.chat_ids)} messages sent successfully"
+            )
+            print(f"❌ Failed chats: {', '.join(failed_chats)}")
         else:
-            direction = "📉"
-            change_type = "ЦЕНА СНИЗИЛАСЬ"
-            diff_str = f"-{abs(diff):,} ₽"
-        
-        header = f"{direction} <b>{change_type}</b>\n\n"
-        price_info = f"💵 <b>{old_price} → {new_price}</b> ({diff_str})\n\n"
-        
-        # Format offer without price (since we already show the price change above)
-        offer_info = self._format_offer_without_price(offer)
-        message = header + price_info + offer_info
-        return self._send_message(message)
-
-    def send_removed_offer(self, offer):
-        """Send notification about removed offer"""
-        header = "❌ <b>ПРЕДЛОЖЕНИЕ СНЯТО</b>\n\n"
-        message = header + self._format_offer(offer)
-        return self._send_message(message)
+            print(f"\n✅ All {success_count} messages sent successfully!")
 
     def send_tracking_updates(self, changes):
-        """Send all tracking updates"""
-        # Send new offers
-        for offer in changes['new_offers']:
-            self.send_new_offer(offer)
-        
-        # Send price changes
-        for change in changes['price_changes']:
-            self.send_price_change(change)
-        
-        # Send removed offers
-        for offer in changes['removed_offers']:
-            self.send_removed_offer(offer)
+        """Send all tracking updates with rate limiting"""
 
-    def test_connection(self):
-        """Test bot connection"""
-        url = f"{self.base_url}/getMe"
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            bot_info = response.json()
-            if bot_info['ok']:
-                print(f"✅ Bot connected successfully: @{bot_info['result']['username']}")
-                print(f"   Will send to {len(self.chat_ids)} chat(s): {', '.join(self.chat_ids)}")
-                return True
-            else:
-                print("❌ Bot connection failed")
-                return False
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error testing bot connection: {e}")
-            return False
+        # Process all changes with the unified formatter
+        for index, change in enumerate(changes, 1):
+            print(f"\n📨 Sending message {index}/{len(changes)}...")
+            message = format_change(change)
+            self.send_message(message)
+
+            # Add delay between messages to avoid rate limiting
+            if index < len(changes):
+                time.sleep(1)

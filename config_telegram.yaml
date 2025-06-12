@@ -1,0 +1,8 @@
+token: 7673477021:AAFttCMzQdl2ojv5XMptrR7xPf26iuKsL7Y
+chat_ids:
+  - 252024578
+  - 405047907
+
+max_retries: 3
+retry_delay: 1  # Initial delay in seconds
+max_delay: 30   # Maximum delay between retries
