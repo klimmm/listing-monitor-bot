@@ -75,13 +75,28 @@ def construct_search_url(config):
     return url.rstrip("&")
 
 
+def construct_offer_url(offer_id):
+    """Construct offer URL using base_url.txt or environment variable"""
+    import os
+    
+    # Get base URL from local file, environment variable, or placeholder
+    if os.path.exists('base_url.txt'):
+        with open('base_url.txt', 'r') as f:
+            base_url = f.read().strip()
+    else:
+        base_url = os.getenv('BASE_URL', 'DEFAULT_BASE_URL_PLACEHOLDER')
+    
+    return f"{base_url}/rent/flat/{offer_id}/"
+
+
 def format_offer(offer):
     """Format offer data for Telegram message"""
+    offer_url = construct_offer_url(offer['offer_id'])
     fields = [
         (f"<b>{offer['time_label']}</b>",),
         (f"<b>{offer['sub_district']}, {offer['metro']}</b>",),
         (offer["price_info"],),
-        (offer["offer_url"],),
+        (offer_url,),
     ]
     lines = [value[0] or "не указано" for value in fields]
     return "\n".join(lines)

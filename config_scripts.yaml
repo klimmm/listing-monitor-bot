@@ -163,7 +163,6 @@ primary_script: |
                 if (offerId) {
                     results.push({
                         offer_id: offerId,
-                        offer_url: url,
                         price_numeric: priceNumeric,
                         time_label: timeLabel,
                         title: title,
