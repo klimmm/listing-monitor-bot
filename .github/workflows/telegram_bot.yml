@@ -30,17 +30,6 @@ jobs:
         pip install playwright requests pyyaml asyncio
         playwright install chromium
         
-    - name: Create bot configuration
-      run: |
-        cat > config_telegram.yaml << EOF
-        token: ${{ secrets.BOT_TOKEN }}
-        chat_ids:
-          - ${{ secrets.CHAT_ID }}
-        max_retries: 3
-        retry_delay: 1
-        max_delay: 30
-        EOF
-        
     - name: Run bot
       run: python parser.py
       
