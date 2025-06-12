@@ -13,3 +13,4 @@ helpers_old.py
 github_token.txt.backup
 base_url.txt
 trigger_workflow.sh
+fetch_current_data.py
