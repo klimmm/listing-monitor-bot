@@ -11,3 +11,4 @@ auto_pull.sh
 .ipynb_checkpoints/
 helpers_old.py
 github_token.txt.backup
+base_url.txt

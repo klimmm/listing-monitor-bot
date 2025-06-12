@@ -35,6 +35,8 @@ jobs:
         sed -i "s/YOUR_BOT_TOKEN_HERE/${{ secrets.BOT_TOKEN }}/" config_telegram.yaml
         
     - name: Run bot
+      env:
+        BASE_URL: ${{ secrets.BASE_URL }}
       run: python parser.py
       
     - name: Commit and push changes

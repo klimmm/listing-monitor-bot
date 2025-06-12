@@ -47,8 +47,16 @@ def track_changes(current_data, previous_data):
 
 
 def construct_cian_url(config):
-
-    url = "https://www.cian.ru/cat.php?currency=2&engine_version=2&type=4&deal_type=rent&sort=creation_date_desc&"
+    import os
+    
+    # Get base URL from local file, environment variable, or placeholder
+    if os.path.exists('base_url.txt'):
+        with open('base_url.txt', 'r') as f:
+            base_url = f.read().strip()
+    else:
+        base_url = os.getenv('BASE_URL', 'DEFAULT_BASE_URL_PLACEHOLDER')
+    
+    url = f"{base_url}/cat.php?currency=2&engine_version=2&type=4&deal_type=rent&sort=creation_date_desc&"
 
     for key in config:
         if key == "district":
