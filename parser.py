@@ -44,7 +44,7 @@ async def parse_single_url(context, url, browser_config, scripts):
 
     except Exception as e:
         print(f"Error parsing URL: {e}")
-        return []
+        raise e  # Re-raise the exception instead of returning empty array
 
     finally:
         await page.close()
@@ -118,26 +118,34 @@ async def parse_listings_auto(data_file="data/current_data.json"):
     print("\nSearch parameters:")
     for key, value in search_config.items():
         print(f"  {key}: {value}")
-    # Generate base URL
-    base_url = construct_search_url(search_config)
-    current_data = await parse_with_auto_pagination(base_url, browser_config, scripts)
+    
+    try:
+        # Generate base URL
+        base_url = construct_search_url(search_config)
+        current_data = await parse_with_auto_pagination(base_url, browser_config, scripts)
 
-    # Normalize offer data (parse dates, etc.)
-    current_data = normalize_offer_data(current_data)
+        # Normalize offer data (parse dates, etc.)
+        current_data = normalize_offer_data(current_data)
 
-    # Track changes
-    with open(data_file, "r", encoding="utf-8") as f:
-        previous_data = json.load(f)
-    changes = track_changes(current_data, previous_data)
+        # Track changes
+        with open(data_file, "r", encoding="utf-8") as f:
+            previous_data = json.load(f)
+        changes = track_changes(current_data, previous_data)
 
-    # Send Telegram notifications
-    bot = TelegramBot(telegram_config)
-    if changes:
-        bot.send_tracking_updates(changes)
+        # Send Telegram notifications
+        bot = TelegramBot(telegram_config)
+        if changes:
+            bot.send_tracking_updates(changes)
 
-    # Save current data
-    with open(data_file, "w", encoding="utf-8") as f:
-        json.dump(current_data, f, ensure_ascii=False, indent=2)
+        # Save current data
+        with open(data_file, "w", encoding="utf-8") as f:
+            json.dump(current_data, f, ensure_ascii=False, indent=2)
+            
+    except Exception as e:
+        print(f"❌ PARSING FAILED: {e}")
+        print("🛡️  Preserving existing data - no changes made to current_data.json")
+        # Exit with error code so GitHub Actions knows it failed
+        exit(1)
 
 
 if __name__ == "__main__":
