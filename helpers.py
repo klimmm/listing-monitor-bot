@@ -18,37 +18,114 @@ def print_change(current_offer=None, previous_offer=None):
         print("No change")
 
 
+def are_duplicate_offers(offer1, offer2):
+    """Check if two offers are duplicates based on key attributes"""
+    # Required fields for comparison
+    required_fields = ["building_id", "price_numeric", "floor", "rooms"]
+
+    # Check if both offers have all required fields
+    for field in required_fields:
+        if field not in offer1 or field not in offer2:
+            return False
+
+    # Compare all required fields
+    return (
+        offer1["building_id"] == offer2["building_id"]
+        and offer1["price_numeric"] == offer2["price_numeric"]
+        and offer1["floor"] == offer2["floor"]
+        and offer1["rooms"] == offer2["rooms"]
+    )
+
+
+def filter_duplicate_changes(new_changes, removed_changes):
+    """Filter out duplicate changes where new and removed offers are the same property"""
+    filtered_new = []
+    filtered_removed = []
+
+    # Track which removed offers are duplicates of new offers
+    removed_duplicates = set()
+
+    for new_change in new_changes:
+        new_offer = new_change["current_offer"]
+        is_duplicate = False
+
+        for i, removed_change in enumerate(removed_changes):
+            if i in removed_duplicates:
+                continue
+
+            removed_offer = removed_change["previous_offer"]
+
+            if are_duplicate_offers(new_offer, removed_offer):
+                print(
+                    f"🔄 Filtering duplicate: New {new_offer['offer_id']} = Removed {removed_offer['offer_id']} "
+                    f"({new_offer.get('building_id', 'N/A')}, {new_offer.get('price_numeric', 'N/A')}₽, "
+                    f"Floor {new_offer.get('floor', 'N/A')}, {new_offer.get('rooms', 'N/A')} rooms)"
+                )
+                removed_duplicates.add(i)
+                is_duplicate = True
+                break
+
+        if not is_duplicate:
+            filtered_new.append(new_change)
+
+    # Add non-duplicate removed changes
+    for i, removed_change in enumerate(removed_changes):
+        if i not in removed_duplicates:
+            filtered_removed.append(removed_change)
+
+    return filtered_new, filtered_removed
+
+
 def track_changes(current_data, previous_data):
     """Compare current data with previous run to detect changes"""
     previous_offers = {item["offer_id"]: item for item in previous_data}
     current_offers = {item["offer_id"]: item for item in current_data}
-    new = 0
-    price_changes = 0
-    removed = 0
-    changes = []
+
+    new_changes = []
+    price_changes = []
+    removed_changes = []
+
+    # Track new offers and price changes
     for offer_id, current_offer in current_offers.items():
         if offer_id not in previous_offers:
-            changes.append({"current_offer": current_offer})
-            print_change(current_offer)
-            new += 1
+            new_changes.append({"current_offer": current_offer})
         else:
             previous_offer = previous_offers[offer_id]
             if current_offer["price_numeric"] != previous_offer["price_numeric"]:
-                changes.append(
+                price_changes.append(
                     {"current_offer": current_offer, "previous_offer": previous_offer}
                 )
-                print_change(current_offer, previous_offer)
-                price_changes += 1
+
+    # Track removed offers
     for offer_id, previous_offer in previous_offers.items():
         if offer_id not in current_offers:
-            changes.append({"previous_offer": previous_offer})
-            print_change(previous_offer=previous_offer)
-            removed += 1
+            removed_changes.append({"previous_offer": previous_offer})
 
-    print(f"\n🆕 NEW OFFERS: {new}")
-    print(f"💰 PRICE CHANGES: {price_changes}")
-    print(f"❌ REMOVED OFFERS: {removed}")
-    return changes
+    # Filter out duplicates between new and removed
+    filtered_new, filtered_removed = filter_duplicate_changes(
+        new_changes, removed_changes
+    )
+
+    # Print changes for the filtered results
+    for change in filtered_new:
+        print_change(change["current_offer"])
+
+    for change in price_changes:
+        print_change(change["current_offer"], change["previous_offer"])
+
+    for change in filtered_removed:
+        print_change(previous_offer=change["previous_offer"])
+
+    # Combine all changes for return
+    all_changes = filtered_new + price_changes + filtered_removed
+
+    print(f"\n🆕 NEW OFFERS: {len(filtered_new)}")
+    print(f"💰 PRICE CHANGES: {len(price_changes)}")
+    print(f"❌ REMOVED OFFERS: {len(filtered_removed)}")
+    if len(new_changes) - len(filtered_new) > 0:
+        print(f"🔄 FILTERED DUPLICATES: {len(new_changes) - len(filtered_new)}")
+
+    return all_changes
 
 
 def construct_search_url(config):
@@ -196,10 +273,38 @@ def parse_russian_date(time_label):
     return time_label  # Return original if parsing fails
 
 
+def extract_floor_and_rooms(title):
+    """Extract floor and room information from title string"""
+    result = {}
+
+    if not title:
+        return result
+
+    # Extract room count (e.g., "1-комн.", "2-комн.", "Студия")
+    room_match = re.search(r"(\d+)-комн\.", title)
+    if room_match:
+        result["rooms"] = int(room_match.group(1))
+    elif "студия" in title.lower():
+        result["rooms"] = 0  # Studio = 0 rooms
+
+    # Extract floor information (e.g., "3/9 этаж")
+    floor_match = re.search(r"(\d+)/(\d+)\s*этаж", title)
+    if floor_match:
+        result["floor"] = int(floor_match.group(1))
+        result["total_floors"] = int(floor_match.group(2))
+
+    return result
+
+
 def normalize_offer_data(offers):
     """Normalize offer data after parsing (modifies in-place)"""
     for offer in offers:
         # Parse Russian dates
         if "time_label" in offer and offer["time_label"]:
             offer["time_label_parsed"] = parse_russian_date(offer["time_label"])
+
+        # Extract floor and room number from title
+        if "title" in offer and offer["title"]:
+            floor_info = extract_floor_and_rooms(offer["title"])
+            offer.update(floor_info)
     return offers
