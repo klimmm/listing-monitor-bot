@@ -37,7 +37,7 @@ def are_duplicate_offers(offer1, offer2):
     )
 
 
-def filter_duplicate_changes(new_changes, removed_changes):
+def filter_duplicate_changes(new_changes, removed_changes, current_offers, previous_offers):
     """Filter out duplicate changes where new and removed offers are the same property"""
     filtered_new = []
     filtered_removed = []
@@ -45,10 +45,12 @@ def filter_duplicate_changes(new_changes, removed_changes):
     # Track which removed offers are duplicates of new offers
     removed_duplicates = set()
 
+    # Filter new offers: check against removed offers (existing logic)
     for new_change in new_changes:
         new_offer = new_change["current_offer"]
         is_duplicate = False
 
+        # Check against removed offers in same run
         for i, removed_change in enumerate(removed_changes):
             if i in removed_duplicates:
                 continue
@@ -65,12 +67,41 @@ def filter_duplicate_changes(new_changes, removed_changes):
                 is_duplicate = True
                 break
 
+        # Check against existing offers (new logic)
+        if not is_duplicate:
+            for existing_offer_id, existing_offer in current_offers.items():
+                if existing_offer_id != new_offer['offer_id'] and are_duplicate_offers(new_offer, existing_offer):
+                    print(
+                        f"🔄 Filtering duplicate: New {new_offer['offer_id']} = Existing {existing_offer['offer_id']} "
+                        f"({new_offer.get('building_id', 'N/A')}, {new_offer.get('price_numeric', 'N/A')}₽, "
+                        f"Floor {new_offer.get('floor', 'N/A')}, {new_offer.get('rooms', 'N/A')} rooms)"
+                    )
+                    is_duplicate = True
+                    break
+
         if not is_duplicate:
             filtered_new.append(new_change)
 
-    # Add non-duplicate removed changes
+    # Filter removed offers: check against remaining offers (new logic)
     for i, removed_change in enumerate(removed_changes):
-        if i not in removed_duplicates:
+        if i in removed_duplicates:
+            continue
+            
+        removed_offer = removed_change["previous_offer"]
+        is_duplicate = False
+        
+        # Check if a duplicate still exists in current offers
+        for current_offer_id, current_offer in current_offers.items():
+            if are_duplicate_offers(removed_offer, current_offer):
+                print(
+                    f"🔄 Filtering duplicate: Removed {removed_offer['offer_id']} = Remaining {current_offer['offer_id']} "
+                    f"({removed_offer.get('building_id', 'N/A')}, {removed_offer.get('price_numeric', 'N/A')}₽, "
+                    f"Floor {removed_offer.get('floor', 'N/A')}, {removed_offer.get('rooms', 'N/A')} rooms)"
+                )
+                is_duplicate = True
+                break
+        
+        if not is_duplicate:
             filtered_removed.append(removed_change)
 
     return filtered_new, filtered_removed
@@ -103,7 +134,7 @@ def track_changes(current_data, previous_data):
 
     # Filter out duplicates between new and removed
     filtered_new, filtered_removed = filter_duplicate_changes(
-        new_changes, removed_changes
+        new_changes, removed_changes, current_offers, previous_offers
     )
 
     # Print changes for the filtered results
