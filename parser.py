@@ -132,11 +132,10 @@ async def parse_listings_auto(data_file="data/current_data.json"):
             previous_data = json.load(f)
         changes = track_changes(current_data, previous_data)
 
-        # Send Telegram notifications (disabled for testing)
-        # bot = TelegramBot(telegram_config)
-        # if changes:
-        #     bot.send_tracking_updates(changes)
-        print(f"🔕 Telegram notifications disabled for testing")
+        # Send Telegram notifications
+        bot = TelegramBot(telegram_config)
+        if changes:
+            bot.send_tracking_updates(changes)
 
         # Create workflow trigger flags
         os.makedirs("data", exist_ok=True)
