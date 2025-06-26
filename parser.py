@@ -148,7 +148,7 @@ async def parse_listings_auto(data_file="data/current_data.json"):
         
         if has_removed:
             with open("data/workflow_trigger", "w") as f:
-                f.write("mode=update\nsearch=narrow")
+                f.write("mode=update\nsearch=wide")
         elif has_new or has_price_changes:
             with open("data/workflow_trigger", "w") as f:
                 f.write("mode=new\nsearch=narrow")

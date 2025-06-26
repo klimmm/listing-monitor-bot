@@ -52,8 +52,8 @@ def test_trigger_logic(current_data, previous_data, scenario_name):
     
     if has_removed:
         with open("data/workflow_trigger", "w") as f:
-            f.write("mode=update\nsearch=narrow")
-        print("✅ Created trigger file: mode=update search=narrow")
+            f.write("mode=update\nsearch=wide")
+        print("✅ Created trigger file: mode=update search=wide")
     elif has_new or has_price_changes:
         with open("data/workflow_trigger", "w") as f:
             f.write("mode=new\nsearch=narrow")
