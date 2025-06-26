@@ -41,3 +41,11 @@ jobs:
       with:
         commit_message: 'Auto-update data [skip ci]'
         file_pattern: 'data/*'
+        
+    - name: Trigger data pipeline
+      run: |
+        gh workflow run data-pipeline.yml \
+          --repo klimmm/cian-tracker \
+          --ref main
+      env:
+        GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
