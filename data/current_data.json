@@ -808,5 +808,31 @@
     "rooms": 1,
     "floor": 3,
     "total_floors": 9
+  },
+  {
+    "offer_id": "test_removed_1",
+    "price_numeric": 100000,
+    "price": "100000 ₽/мес.",
+    "title": "Test Removed Offer 1",
+    "metro": "Test Metro",
+    "building_id": "test_building_1",
+    "floor": 1,
+    "rooms": 1,
+    "total_floors": 5,
+    "time_label": "тестовое время",
+    "time_label_parsed": "2025-06-26 04:00:00"
+  },
+  {
+    "offer_id": "test_removed_2",
+    "price_numeric": 200000,
+    "price": "200000 ₽/мес.",
+    "title": "Test Removed Offer 2",
+    "metro": "Test Metro 2",
+    "building_id": "test_building_2",
+    "floor": 2,
+    "rooms": 2,
+    "total_floors": 6,
+    "time_label": "тестовое время",
+    "time_label_parsed": "2025-06-26 04:00:00"
   }
 ]
