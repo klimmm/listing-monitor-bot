@@ -68,7 +68,7 @@ jobs:
           exit 1
         fi
         gh workflow run data-pipeline.yml \
-          --repo klimmm/cian-tracker \
+          --repo rental-data-pipeline \
           --ref main \
           -f mode=${{ steps.check_trigger.outputs.mode }} \
           -f search=${{ steps.check_trigger.outputs.search }}
