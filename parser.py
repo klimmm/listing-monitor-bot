@@ -16,7 +16,7 @@ except ImportError:
     pass
 
 
-async def parse_single_url(context, url, browser_config, scripts):
+async def parse_single_url(context, url, browser_config, scripts, max_retries=2):
     """Parse a single URL and return offers"""
     print(f"\nParsing: {url[:200]}...")
 
@@ -30,11 +30,21 @@ async def parse_single_url(context, url, browser_config, scripts):
             timeout=browser_config["timeouts"]["wait_until"],
         )
 
-        # Wait for content to load using the wait function
-        await page.wait_for_function(
-            scripts["wait_for_function"],
-            timeout=browser_config["timeouts"]["wait_for_function"],
-        )
+        # Wait for content to load using the wait function with retry logic
+        for attempt in range(max_retries):
+            try:
+                await page.wait_for_function(
+                    scripts["wait_for_function"],
+                    timeout=browser_config["timeouts"]["wait_for_function"],
+                )
+                break  # Success, exit retry loop
+            except Exception as wait_error:
+                if attempt < max_retries - 1:
+                    print(f"⚠️  Wait timeout attempt {attempt + 1}/{max_retries}, retrying...")
+                    await asyncio.sleep(2)  # Wait 2 seconds before retry
+                else:
+                    print(f"❌ All {max_retries} wait attempts failed")
+                    raise wait_error
 
         # Execute the primary script to extract data
         data = await page.evaluate(scripts["primary_script"])
@@ -118,11 +128,13 @@ async def parse_listings_auto(data_file="data/current_data.json"):
     print("\nSearch parameters:")
     for key, value in search_config.items():
         print(f"  {key}: {value}")
-    
+
     try:
         # Generate base URL
         base_url = construct_search_url(search_config)
-        current_data = await parse_with_auto_pagination(base_url, browser_config, scripts)
+        current_data = await parse_with_auto_pagination(
+            base_url, browser_config, scripts
+        )
 
         # Normalize offer data (parse dates, etc.)
         current_data = normalize_offer_data(current_data)
@@ -139,12 +151,21 @@ async def parse_listings_auto(data_file="data/current_data.json"):
 
         # Create workflow trigger flags
         os.makedirs("data", exist_ok=True)
-        
+
         # Categorize changes
-        has_new = any("current_offer" in change and "previous_offer" not in change for change in changes)
-        has_removed = any("previous_offer" in change and "current_offer" not in change for change in changes)
-        has_price_changes = any("current_offer" in change and "previous_offer" in change for change in changes)
-        
+        has_new = any(
+            "current_offer" in change and "previous_offer" not in change
+            for change in changes
+        )
+        has_removed = any(
+            "previous_offer" in change and "current_offer" not in change
+            for change in changes
+        )
+        has_price_changes = any(
+            "current_offer" in change and "previous_offer" in change
+            for change in changes
+        )
+
         if has_removed:
             with open("data/workflow_trigger", "w") as f:
                 f.write("mode=update\nsearch=wide")
@@ -155,7 +176,7 @@ async def parse_listings_auto(data_file="data/current_data.json"):
         # Save current data
         with open(data_file, "w", encoding="utf-8") as f:
             json.dump(current_data, f, ensure_ascii=False, indent=2)
-            
+
     except Exception as e:
         print(f"❌ PARSING FAILED: {e}")
         print("🛡️  Preserving existing data - no changes made to current_data.json")
