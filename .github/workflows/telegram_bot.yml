@@ -36,13 +36,18 @@ jobs:
         BASE_URL: ${{ secrets.BASE_URL }}
       run: python parser.py
       
+    - name: Remove workflow trigger from staging
+      run: |
+        # Remove workflow_trigger file from git staging if it exists
+        if [ -f "data/workflow_trigger" ]; then
+          git reset HEAD data/workflow_trigger 2>/dev/null || true
+        fi
+      
     - name: Commit and push changes
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: 'Auto-update data [skip ci]'
-        file_pattern: |
-          data/*
-          !data/workflow_trigger
+        file_pattern: 'data/*'
         
     - name: Check for trigger conditions
       id: check_trigger
