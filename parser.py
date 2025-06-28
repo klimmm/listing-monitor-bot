@@ -149,29 +149,30 @@ async def parse_listings_auto(data_file="data/current_data.json"):
         if changes:
             bot.send_tracking_updates(changes)
 
-        # Create workflow trigger flags
-        os.makedirs("data", exist_ok=True)
+        # Create workflow trigger flags only if there are actual changes
+        if changes:
+            os.makedirs("data", exist_ok=True)
 
-        # Categorize changes
-        has_new = any(
-            "current_offer" in change and "previous_offer" not in change
-            for change in changes
-        )
-        has_removed = any(
-            "previous_offer" in change and "current_offer" not in change
-            for change in changes
-        )
-        has_price_changes = any(
-            "current_offer" in change and "previous_offer" in change
-            for change in changes
-        )
+            # Categorize changes
+            has_new = any(
+                "current_offer" in change and "previous_offer" not in change
+                for change in changes
+            )
+            has_removed = any(
+                "previous_offer" in change and "current_offer" not in change
+                for change in changes
+            )
+            has_price_changes = any(
+                "current_offer" in change and "previous_offer" in change
+                for change in changes
+            )
 
-        if has_removed:
-            with open("data/workflow_trigger", "w") as f:
-                f.write("mode=update\nsearch=wide")
-        elif has_new or has_price_changes:
-            with open("data/workflow_trigger", "w") as f:
-                f.write("mode=new\nsearch=narrow")
+            if has_removed:
+                with open("data/workflow_trigger", "w") as f:
+                    f.write("mode=update\nsearch=wide")
+            elif has_new or has_price_changes:
+                with open("data/workflow_trigger", "w") as f:
+                    f.write("mode=new\nsearch=narrow")
 
         # Save current data
         with open(data_file, "w", encoding="utf-8") as f:
