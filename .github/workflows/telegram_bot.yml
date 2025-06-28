@@ -40,7 +40,9 @@ jobs:
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: 'Auto-update data [skip ci]'
-        file_pattern: 'data/*'
+        file_pattern: |
+          data/*
+          !data/workflow_trigger
         
     - name: Check for trigger conditions
       id: check_trigger
