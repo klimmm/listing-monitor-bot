@@ -18,6 +18,15 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Clean up any existing trigger files
+      run: |
+        # Remove any workflow_trigger file from previous runs
+        if [ -f "data/workflow_trigger" ]; then
+          echo "⚠️  Found old trigger file from previous run, removing..."
+          rm -f data/workflow_trigger
+          git rm -f data/workflow_trigger 2>/dev/null || true
+        fi
       
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -53,6 +62,7 @@ jobs:
       id: check_trigger
       run: |
         echo "🔍 Checking for workflow trigger file..."
+        # Check if parser.py created a new trigger file
         if [ -f "data/workflow_trigger" ]; then
           echo "✅ Trigger file found!"
           cat data/workflow_trigger
