@@ -60,9 +60,8 @@ jobs:
           echo "✅ Trigger file found!"
           cat data/workflow_trigger
           echo "should_trigger=true" >> $GITHUB_OUTPUT
-          echo "mode=$(grep '^mode=' data/workflow_trigger | cut -d'=' -f2)" >> $GITHUB_OUTPUT
           echo "search=$(grep '^search=' data/workflow_trigger | cut -d'=' -f2)" >> $GITHUB_OUTPUT
-          echo "📋 Extracted: mode=$(grep '^mode=' data/workflow_trigger | cut -d'=' -f2), search=$(grep '^search=' data/workflow_trigger | cut -d'=' -f2)"
+          echo "📋 Extracted: search=$(grep '^search=' data/workflow_trigger | cut -d'=' -f2)"
           rm data/workflow_trigger
         else
           echo "❌ No trigger file found - no changes detected"
@@ -72,7 +71,7 @@ jobs:
     - name: Trigger data pipeline
       if: steps.check_trigger.outputs.should_trigger == 'true'
       run: |
-        echo "🚀 Triggering data-pipeline with mode=${{ steps.check_trigger.outputs.mode }} search=${{ steps.check_trigger.outputs.search }}"
+        echo "🚀 Triggering data-pipeline with search=${{ steps.check_trigger.outputs.search }}"
         if [ -z "${{ secrets.PERSONAL_ACCESS_TOKEN }}" ]; then
           echo "❌ PERSONAL_ACCESS_TOKEN not set - cannot trigger external workflow"
           exit 1
@@ -80,7 +79,6 @@ jobs:
         gh workflow run data-pipeline.yml \
           --repo klimmm/rental-data-pipeline \
           --ref main \
-          -f mode=${{ steps.check_trigger.outputs.mode }} \
           -f search=${{ steps.check_trigger.outputs.search }}
         echo "✅ Trigger command completed successfully"
       env:
