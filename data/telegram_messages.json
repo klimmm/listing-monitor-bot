@@ -14712,5 +14712,19 @@
     "text": "🆕 <b>НОВОЕ ПРЕДЛОЖЕНИЕ</b>\n\n<b>сегодня, 12:27</b>\n<b>р-н Хамовники, м. Фрунзенская</b>\nОт года, комм. платежи включены (без счётчиков), комиссия 98%, без залога\nhttps://www.cian.ru/rent/flat/321523061/",
     "success": true,
     "error_message": null
+  },
+  {
+    "timestamp": "2025-09-12T13:52:29.864143",
+    "chat_id": "252024578",
+    "text": "❌ <b>ПРЕДЛОЖЕНИЕ СНЯТО</b>\n\n<b>сегодня, 12:27</b>\n<b>р-н Хамовники, м. Фрунзенская</b>\nОт года, комм. платежи включены (без счётчиков), комиссия 98%, без залога\nhttps://www.cian.ru/rent/flat/321523061/",
+    "success": false,
+    "error_message": "HTTPSConnectionPool(host='api.telegram.org', port=443): Read timed out. (read timeout=10)"
+  },
+  {
+    "timestamp": "2025-09-12T13:53:03.421061",
+    "chat_id": "405047907",
+    "text": "❌ <b>ПРЕДЛОЖЕНИЕ СНЯТО</b>\n\n<b>сегодня, 12:27</b>\n<b>р-н Хамовники, м. Фрунзенская</b>\nОт года, комм. платежи включены (без счётчиков), комиссия 98%, без залога\nhttps://www.cian.ru/rent/flat/321523061/",
+    "success": false,
+    "error_message": "HTTPSConnectionPool(host='api.telegram.org', port=443): Max retries exceeded with url: /bot7673477021:AAFttCMzQdl2ojv5XMptrR7xPf26iuKsL7Y/sendMessage (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7fbcfa666d50>: Failed to establish a new connection: [Errno 101] Network is unreachable'))"
   }
 ]
