@@ -16,12 +16,12 @@ class TelegramBot:
         self.max_delay = config.get("max_delay", 30)
         self.message_log_file = config.get("message_log_file", "data/telegram_messages.json")
 
-    def _log_message(self, chat_id, text, success, error_message=None):
+    def _log_message(self, chat_id, text, success, error_message=None, message_id=None):
         """Log sent message to JSON file"""
         try:
             # Ensure directory exists
             os.makedirs(os.path.dirname(self.message_log_file), exist_ok=True)
-            
+
             # Load existing messages
             messages = []
             if os.path.exists(self.message_log_file):
@@ -30,11 +30,12 @@ class TelegramBot:
                         messages = json.load(f)
                 except json.JSONDecodeError:
                     messages = []
-            
+
             # Create message entry
             message_entry = {
                 "timestamp": datetime.now().isoformat(),
                 "chat_id": chat_id,
+                "message_id": message_id,
                 "text": text,
                 "success": success,
                 "error_message": error_message
@@ -63,8 +64,9 @@ class TelegramBot:
             try:
                 response = requests.post(url, data=data, timeout=10)
                 response.raise_for_status()
-                print(f"✅ Message sent to chat {chat_id}")
-                self._log_message(chat_id, text, success=True)
+                message_id = response.json().get("result", {}).get("message_id")
+                print(f"✅ Message sent to chat {chat_id} (message_id={message_id})")
+                self._log_message(chat_id, text, success=True, message_id=message_id)
                 return True
 
             except requests.exceptions.RequestException as e:
