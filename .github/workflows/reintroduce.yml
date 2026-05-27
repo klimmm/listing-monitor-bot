@@ -1,0 +1,30 @@
+name: Reintroduce bot to subscribers
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Welcome message (Telegram HTML supported)'
+        required: true
+        default: '👋 Бот снова на связи. Подписка на новые квартиры активна.'
+      source:
+        description: 'Source of chat_ids'
+        type: choice
+        options: [config, messages]
+        default: config
+
+jobs:
+  reintroduce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests pyyaml
+      - name: Send reintroduction
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          MESSAGE: ${{ inputs.message }}
+          SOURCE: ${{ inputs.source }}
+        run: python reintroduce.py "$MESSAGE" --source "$SOURCE"
