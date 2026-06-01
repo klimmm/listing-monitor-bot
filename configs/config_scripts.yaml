@@ -40,17 +40,22 @@ primary_script: |
                     priceInfo = priceInfoElement.textContent.trim();
                 }
                 
-                // Extract time label - only absolute time
+                // Extract time label - prefer absolute time, fall back to visible label
                 let timeLabel = null;
                 const timeLabelElement = card.querySelector('[data-name="TimeLabel"]');
                 if (timeLabelElement) {
-                    // Look for the absolute time in the specific div
-                    const absoluteTimeDiv = timeLabelElement.querySelector('._93444fe79c--absolute--yut0v');
+                    // CSS-module hashes rotate on every Cian deploy, but the human-readable
+                    // "absolute" segment is stable. Its position varies by build (middle
+                    // "..--absolute--yut0v" in older builds, suffix "..--cb3605--absolute" now),
+                    // so match the leading "--absolute" by substring to cover both formats.
+                    const absoluteTimeDiv = timeLabelElement.querySelector('[class*="--absolute"]');
                     if (absoluteTimeDiv) {
                         const timeSpan = absoluteTimeDiv.querySelector('span');
-                        if (timeSpan) {
-                            timeLabel = timeSpan.textContent.trim();
-                        }
+                        timeLabel = (timeSpan || absoluteTimeDiv).textContent.trim() || null;
+                    }
+                    // Fallback: use whatever the TimeLabel shows so we never lose the value
+                    if (!timeLabel) {
+                        timeLabel = timeLabelElement.textContent.trim() || null;
                     }
                 }
                 
